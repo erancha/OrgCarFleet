@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: OrgCarFleet - API Gateway, Lambda, SQS with Google Authentication
+
+Parameters:
+  ApiGatewayCorsAllowedMethods:
+    Type: String
+    Default: "'GET,POST,OPTIONS'" # PUT,DELETE,
+    Description: 'Allowed HTTP methods for CORS'
+  ApiGatewayCorsAllowedHeaders:
+    Type: String
+    Default: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    Description: 'Allowed headers for CORS'
+  ApiGatewayCorsAllowedOrigins:
+    Type: String
+    Default: "'*'" # TODO
+    Description: 'Allowed origins for CORS'
+
+  ExistingUserPoolId:
+    Description: 'ID of an existing Cognito User Pool'
+    Type: String
+  ExistingCognitoDomain:
+    Description: 'Existing Cognito Domain'
+    Type: String
+  Environment:
+    Description: 'Environment name (dev, prod, etc.)'
+    Type: String
+    Default: 'dev'
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs20.x
+    MemorySize: 256
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+
+Resources:
+  # API Gateway
+  ApiGatewayREST:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-REST'
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: !Ref ApiGatewayCorsAllowedMethods
+        AllowHeaders: !Ref ApiGatewayCorsAllowedHeaders
+        AllowOrigin: !Ref ApiGatewayCorsAllowedOrigins
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}'
+            Identity:
+              Header: Authorization
+
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref ExistingUserPoolId
+      ClientName: !Sub '${AWS::StackName}-UserPoolClient'
+      GenerateSecret: false
+      AllowedOAuthFlows: ['code']
+      AllowedOAuthScopes: ['phone', 'email', 'openid', 'profile']
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - 'http://localhost:3000'
+        - 'http://localhost:3000/'
+      LogoutURLs:
+        - 'http://localhost:3000'
+        - 'http://localhost:3000/'
+      SupportedIdentityProviders: ['Google']
+      ExplicitAuthFlows:
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+
+  # Lambda Function
+  CarRequestsApiHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'CarRequestsApiHandler-${AWS::StackName}'
+      CodeUri: ../backend/api/car
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayREST
+            Path: /api/car
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !Ref CarRequestsQueue
+
+  # Lambda Execution Role
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SQSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:GetQueueUrl
+                Resource: !GetAtt CarRequestsQueue.Arn
+
+  # SQS Queue (TODO: FIFO?)
+  CarRequestsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${AWS::StackName}-${Environment}-car-requests'
+      VisibilityTimeout: 60 # Time (seconds) a message is invisible after being received by a consumer
+      MessageRetentionPeriod: 345600 # Time (seconds) messages are retained in queue before deletion (4 days)
+      ReceiveMessageWaitTimeSeconds: 20 # Long polling duration (seconds) to wait for messages before returning empty response
+
+Outputs:
+  ApiUrl:
+    Description: 'API Gateway endpoint URL'
+    Value: !Sub 'https://${ApiGatewayREST}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+
+  QueueUrl:
+    Description: 'SQS Queue URL'
+    Value: !Ref CarRequestsQueue
+    Export:
+      Name: !Sub '${AWS::StackName}-QueueUrl'
+
+  QueueArn:
+    Description: 'SQS Queue ARN'
+    Value: !GetAtt CarRequestsQueue.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-QueueArn'
+
+  UserPoolId:
+    Description: 'Cognito User Pool ID'
+    Value: !Ref ExistingUserPoolId
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolId'
+
+  CognitoDomain:
+    Description: 'Cognito Domain'
+    Value: !Ref ExistingCognitoDomain
+    Export:
+      Name: !Sub '${AWS::StackName}-CognitoDomain'
+
+  UserPoolClientId:
+    Description: 'Cognito User Pool Client ID'
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolClientId'
