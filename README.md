@@ -141,15 +141,9 @@ OrgCarFleet/
 
 ## Setup Instructions
 
-### 1. Configure AWS Credentials
+### 1. Configure AWS Credentials and region
 
-The deployment uses AWS credentials configured in `scripts/aws-configure.sh`. This file contains:
-
-- AWS Access Key ID
-- AWS Secret Access Key
-- Default AWS Region
-
-These credentials are sourced automatically by the deployment script.
+The deployment uses AWS credentials configured in `scripts/aws-configure.sh`.
 
 ### 2. Deploy Backend
 
@@ -159,16 +153,14 @@ chmod +x dev-build-deploy.sh
 ./dev-build-deploy.sh dev
 ```
 
-The region is automatically read from `aws-configure.sh`.
+This deployment script:
 
-The deployment script will:
-
-- Install backend dependencies
-- Build the SAM application
-- Deploy to AWS CloudFormation
-- Create Cognito User Pool Client automatically
-- Output the API Gateway URL and other resources
-- Generate `frontend/src/config.js` with all configuration (including Client ID)
+- Installs backend dependencies
+- Builds the SAM application
+- Deploys to AWS CloudFormation
+- Creates Cognito User Pool Client automatically
+- Outputs the API Gateway URL and other resources
+- Generates `frontend/src/config.js` with all configuration (including Client ID)
 
 ### 3. Run Frontend
 
