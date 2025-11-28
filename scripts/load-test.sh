@@ -4,10 +4,10 @@
 # Sends 1000 requests with 100 concurrent workers using curl
 #
 # Usage:
-#   ./load-test.sh <API_URL> <ID_TOKEN> [TOTAL_REQUESTS] [CONCURRENT_WORKERS]
+#   ./load-test.sh <API_URL> <ID_TOKEN> [TOTAL_REQUESTS] [CONCURRENT_WORKERS] [PAYLOAD_TYPE]
 #
 # Example:
-#   ./load-test.sh https://abc123.execute-api.eu-central-1.amazonaws.com/dev eyJraWq... 100 10
+#   ./load-test.sh https://abc123.execute-api.eu-central-1.amazonaws.com/dev eyJraWq... 100 10 round-robin
 
 # Colors
 RED='\033[0;31m'
@@ -17,14 +17,15 @@ NC='\033[0m' # No Color
 
 # Check arguments
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <API_URL> <ID_TOKEN> [TOTAL_REQUESTS] [CONCURRENT_WORKERS]"
-    echo "Example: $0 https://abc123.execute-api.eu-central-1.amazonaws.com/dev eyJraWq... 100 10"
+    echo "Usage: $0 <API_URL> <ID_TOKEN> [TOTAL_REQUESTS] [CONCURRENT_WORKERS] [PAYLOAD_TYPE]"
+    echo "Example: $0 https://abc123.execute-api.eu-central-1.amazonaws.com/dev eyJraWq... 100 10 round-robin"
     echo ""
     echo "Arguments:"
     echo "  API_URL             - Base API URL (without /api suffix)"
     echo "  ID_TOKEN            - Cognito ID token for authentication"
     echo "  TOTAL_REQUESTS      - Total number of requests to send (default: 100)"
     echo "  CONCURRENT_WORKERS  - Number of concurrent workers (default: 10)"
+    echo "  PAYLOAD_TYPE        - Payload type: 'round-robin', 'car', 'fleet', or 'org' (default: round-robin)"
     exit 1
 fi
 
@@ -32,6 +33,7 @@ API_URL="$1/api"
 ID_TOKEN="$2"
 TOTAL_REQUESTS="${3:-100}"
 CONCURRENT_WORKERS="${4:-10}"
+PAYLOAD_TYPE="${5:-round-robin}"
 
 # Sample payloads
 PAYLOAD_CAR='{"type":"car","action":"status-update","vehicleId":"CAR-001","status":"available","location":{"lat":40.7128,"lng":-74.006}}'
@@ -48,6 +50,7 @@ echo "======================================================================"
 echo "API URL: $API_URL"
 echo "Total Requests: $TOTAL_REQUESTS"
 echo "Concurrent Workers: $CONCURRENT_WORKERS"
+echo "Payload Type: $PAYLOAD_TYPE"
 echo "======================================================================"
 echo ""
 
@@ -56,13 +59,28 @@ START_TIME=$(date +%s)
 # Function to send a single request
 send_request() {
     local request_num=$1
-    local payload_type=$((request_num % 3))
     local payload=""
     
-    case $payload_type in
-        0) payload="$PAYLOAD_CAR" ;;
-        1) payload="$PAYLOAD_FLEET" ;;
-        2) payload="$PAYLOAD_ORG" ;;
+    # Determine payload based on PAYLOAD_TYPE parameter
+    case $PAYLOAD_TYPE in
+        "car")
+            payload="$PAYLOAD_CAR"
+            ;;
+        "fleet")
+            payload="$PAYLOAD_FLEET"
+            ;;
+        "org")
+            payload="$PAYLOAD_ORG"
+            ;;
+        "round-robin"|*)
+            # Round-robin through all three types
+            local payload_type=$((request_num % 3))
+            case $payload_type in
+                0) payload="$PAYLOAD_CAR" ;;
+                1) payload="$PAYLOAD_FLEET" ;;
+                2) payload="$PAYLOAD_ORG" ;;
+            esac
+            ;;
     esac
     
     # Send request and capture response time and status code
@@ -86,7 +104,7 @@ send_request() {
 }
 
 export -f send_request
-export API_URL ID_TOKEN PAYLOAD_CAR PAYLOAD_FLEET PAYLOAD_ORG TEMP_DIR
+export API_URL ID_TOKEN PAYLOAD_CAR PAYLOAD_FLEET PAYLOAD_ORG PAYLOAD_TYPE TEMP_DIR
 
 # Generate request numbers and run in parallel
 echo "Starting load test..."

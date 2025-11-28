@@ -57,14 +57,32 @@ exports.handler = async (event) => {
           timestamp: messageBody.timestamp,
         });
 
-        // Prepare Kafka message
+        // Prepare Kafka message with clear field organization
         const kafkaMessage = {
           key: messageBody.userId, // Partition by userId for ordering
           value: JSON.stringify({
-            ...messageBody,
-            sqsMessageId: record.messageId,
-            sqsTimestamp: record.attributes.SentTimestamp,
-            processingTimestamp: new Date().toISOString(),
+            // Client-provided data (from original HTTP request body)
+            clientData: requestData,
+
+            // REST API metadata (added by REST Lambda)
+            restMetadata: {
+              userId: messageBody.userId,
+              userEmail: messageBody.userEmail,
+              requestId: messageBody.requestId,
+              receivedAt: messageBody.timestamp, // When REST API received the request
+            },
+
+            // SQS metadata (added by SQS service)
+            // sqsMetadata: {
+            //   messageId: record.messageId,
+            sentToSQS: new Date(parseInt(record.attributes.SentTimestamp)).toISOString(), // When SQS received the message
+            // },
+
+            // Processing metadata (added by this Lambda)
+            // processingMetadata: {
+            producedToKafka: new Date().toISOString(), // When this Lambda processed the message
+            // source: 'sqs-to-kafka-lambda',
+            // },
           }),
           headers: {
             source: 'sqs-batch-producer',
