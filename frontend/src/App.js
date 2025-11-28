@@ -196,7 +196,7 @@ function App() {
         bodyData = { message: requestData };
       }
 
-      const response = await fetch(`${config.apiUrl}/api/car`, {
+      const response = await fetch(`${config.apiUrl}/api`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

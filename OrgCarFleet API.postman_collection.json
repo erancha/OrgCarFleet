@@ -25,13 +25,12 @@
 							"raw": "{\n  \"message\": \"Test message from Postman\"\n}"
 						},
 						"url": {
-							"raw": "{{api_url}}/api/car",
+							"raw": "{{api_url}}/api",
 							"host": [
 								"{{api_url}}"
 							],
 							"path": [
-								"api",
-								"car"
+								"api"
 							]
 						},
 						"description": "Send a simple text message to test the API."

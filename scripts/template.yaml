@@ -75,29 +75,29 @@ Resources:
         - ALLOW_REFRESH_TOKEN_AUTH
         - ALLOW_USER_SRP_AUTH
 
-  # Lambda Function
-  CarRequestsApiHandler:
+  # API Ingestion Lambda - First stage of ingestion layer: Validates and authenticates REST API Gateway requests, pushes events to SQS
+  RESTIngestionLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'CarRequestsApiHandler-${AWS::StackName}'
-      CodeUri: ../backend/api/car
+      FunctionName: !Sub 'RESTIngestion-${AWS::StackName}'
+      CodeUri: ../backend/rest-api
       Handler: index.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Role: !GetAtt RESTIngestionLambdaRole.Arn
       Events:
         ApiEvent:
           Type: Api
           Properties:
             RestApiId: !Ref ApiGatewayREST
-            Path: /api/car
+            Path: /api
             Method: POST
             Auth:
               Authorizer: CognitoAuthorizer
       Environment:
         Variables:
-          SQS_QUEUE_URL: !Ref CarRequestsQueue
+          SQS_QUEUE_URL: !Ref IngestionQueue
 
   # Lambda Execution Role
-  LambdaExecutionRole:
+  RESTIngestionLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -118,13 +118,13 @@ Resources:
                 Action:
                   - sqs:SendMessage
                   - sqs:GetQueueUrl
-                Resource: !GetAtt CarRequestsQueue.Arn
+                Resource: !GetAtt IngestionQueue.Arn
 
-  # SQS Queue (TODO: FIFO?)
-  CarRequestsQueue:
+  # SQS Queue - Durable message buffer for asynchronous processing
+  IngestionQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: !Sub '${AWS::StackName}-${Environment}-car-requests'
+      QueueName: !Sub '${AWS::StackName}-ingestion'
       VisibilityTimeout: 60 # Time (seconds) a message is invisible after being received by a consumer
       MessageRetentionPeriod: 345600 # Time (seconds) messages are retained in queue before deletion (4 days)
       ReceiveMessageWaitTimeSeconds: 20 # Long polling duration (seconds) to wait for messages before returning empty response
@@ -138,13 +138,13 @@ Outputs:
 
   QueueUrl:
     Description: 'SQS Queue URL'
-    Value: !Ref CarRequestsQueue
+    Value: !Ref IngestionQueue
     Export:
       Name: !Sub '${AWS::StackName}-QueueUrl'
 
   QueueArn:
     Description: 'SQS Queue ARN'
-    Value: !GetAtt CarRequestsQueue.Arn
+    Value: !GetAtt IngestionQueue.Arn
     Export:
       Name: !Sub '${AWS::StackName}-QueueArn'
 

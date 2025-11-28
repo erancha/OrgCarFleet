@@ -67,30 +67,23 @@ echo "  Region: ${REGION}"
 echo "  User Pool ID: ${USER_POOL_ID}"
 echo "  Cognito Domain: ${COGNITO_DOMAIN}"
 
-# Install backend dependencies
-echo -e "\n${CYAN}Installing backend dependencies...${NC}"
-pushd "$BACKEND_DIR/api" > /dev/null
-
-if [ -f "package-lock.json" ]; then
-    rm -f package-lock.json
+# Clean SAM build cache
+echo -e "\n${CYAN}Cleaning SAM build cache...${NC}"
+if [ -d ".aws-sam" ]; then
+    rm -rf .aws-sam
+    echo -e "${GREEN}Removed .aws-sam directory${NC}"
 fi
 
-if [ -d "node_modules" ]; then
-    rm -rf node_modules
-fi
-
-npm install --production
-
-popd > /dev/null
-
-# Build and deploy with SAM
-echo -e "\n${CYAN}Building SAM application...${NC}"
-sam build --template-file "$TEMPLATE_FILE"
+# Build with SAM CLI
+echo -e "\n${CYAN}Building Lambda package with SAM...${NC}"
+sam build --template-file "$TEMPLATE_FILE" --use-container
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: SAM build failed${NC}"
     exit 1
 fi
+
+echo -e "${GREEN}Lambda package built successfully${NC}"
 
 echo -e "\n${CYAN}Deploying to AWS...${NC}"
 sam deploy \

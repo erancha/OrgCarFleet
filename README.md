@@ -5,32 +5,32 @@ A serverless fleet management system built with AWS API Gateway, Google authenti
 <!-- toc -->
 
 - [Architecture](#architecture)
-  * [High-Level Flow](#high-level-flow)
-  * [Architecture Rationale](#architecture-rationale)
-  * [Kafka Producer Configuration](#kafka-producer-configuration)
-  * [Cost Considerations](#cost-considerations)
-  * [Operational & Reliability](#operational--reliability)
-  * [Migration Path](#migration-path)
+  - [High-Level Flow](#high-level-flow)
+  - [Architecture Rationale](#architecture-rationale)
+  - [Kafka Producer Configuration](#kafka-producer-configuration)
+  - [Cost Considerations](#cost-considerations)
+  - [Operational & Reliability](#operational--reliability)
+  - [Migration Path](#migration-path)
 - [Prerequisites](#prerequisites)
 - [Project Structure](#project-structure)
 - [Setup Instructions](#setup-instructions)
-  * [1. Configure AWS Credentials](#1-configure-aws-credentials)
-  * [2. Deploy Backend](#2-deploy-backend)
-  * [3. Run Frontend](#3-run-frontend)
+  - [1. Configure AWS Credentials](#1-configure-aws-credentials)
+  - [2. Deploy Backend](#2-deploy-backend)
+  - [3. Run Frontend](#3-run-frontend)
 - [Usage](#usage)
-  * [Example Request](#example-request)
-  * [Response Format](#response-format)
+  - [Example Request](#example-request)
+  - [Response Format](#response-format)
 - [Backend Flow](#backend-flow)
 - [SQS Message Format](#sqs-message-format)
 - [Development](#development)
-  * [Backend Development](#backend-development)
-  * [Frontend Development](#frontend-development)
-  * [Testing API Locally](#testing-api-locally)
+  - [Backend Development](#backend-development)
+  - [Frontend Development](#frontend-development)
+  - [Testing API Locally](#testing-api-locally)
 - [Security Considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
-  * ["Unauthorized" Error](#unauthorized-error)
-  * ["Failed to send request" Error](#failed-to-send-request-error)
-  * [Google Sign-In Not Working](#google-sign-in-not-working)
+  - ["Unauthorized" Error](#unauthorized-error)
+  - ["Failed to send request" Error](#failed-to-send-request-error)
+  - [Google Sign-In Not Working](#google-sign-in-not-working)
 
 <!-- tocstop -->
 
@@ -41,7 +41,8 @@ A serverless fleet management system built with AWS API Gateway, Google authenti
 ### High-Level Flow
 
 ```
-React Frontend → API Gateway (HTTP API + Cognito Auth) → Lambda (validate/auth) → SQS Queue → Lambda (batch producer, with Provisioned Concurrency) → Kafka → Long-Running services (ECS/Fargate)
+React Frontend → API Gateway (HTTP API + Cognito Auth) → Lambda (validate/auth) → SQS Queue →
+→ Lambda (batch producer, with Provisioned Concurrency) → Kafka → Long-Running services (ECS/Fargate)
 ```
 
 This hybrid serverless architecture is designed for **high-scale ingestion** with low initial cost and the ability to scale efficiently:
@@ -118,11 +119,9 @@ _Note: Costs exclude Kafka cluster (MSK), SQS storage, and data transfer. Batch 
 ```
 OrgCarFleet/
 ├── backend/
-│   └── api/
-│       ├── car/
-│       │   ├── index.js       # Lambda function handler
-│       │   └── package.json   # Lambda dependencies
-│       └── package.json       # Backend dependencies
+│   └── rest-api/
+│       ├── index.js       # Lambda function handler
+│       └── package.json   # Lambda dependencies
 ├── frontend/
 │   ├── public/
 │   │   └── index.html
@@ -245,7 +244,7 @@ Messages sent to SQS include:
 
 To modify the Lambda function:
 
-1. Edit `backend/api/car/index.js`
+1. Edit `backend/rest-api/index.js`
 2. Run deployment script to update
 
 ### Frontend Development
