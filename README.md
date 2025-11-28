@@ -119,9 +119,12 @@ _Note: Costs exclude Kafka cluster (MSK), SQS storage, and data transfer. Batch 
 ```
 OrgCarFleet/
 ├── backend/
-│   └── rest-api/
-│       ├── index.js       # Lambda function handler
-│       └── package.json   # Lambda dependencies
+│   ├── rest-api/
+│   │   ├── index.js       # REST API Lambda handler (API Gateway → SQS)
+│   │   └── package.json   # Lambda dependencies
+│   └── sqs-to-kafka/
+│       ├── index.js       # Batch producer Lambda handler (SQS → Kafka)
+│       └── package.json   # Lambda dependencies (kafkajs)
 ├── frontend/
 │   ├── public/
 │   │   └── index.html
@@ -178,11 +181,38 @@ The application will open at `http://localhost:3000`
 2. **Send Request**: Enter JSON data in the textarea (or plain text)
 3. **View Response**: See the API response including the SQS message ID
 
-### Example Request
+### Example Requests
+
+**Required Field**: All requests must include a `type` field with one of these values: `org`, `fleet`, or `car`. This determines which Kafka topic the message is routed to.
+
+**Organization Event:**
 
 ```json
 {
+  "type": "org",
+  "action": "org-created",
+  "orgId": "ORG-001",
+  "name": "Acme Corporation"
+}
+```
+
+**Fleet Event:**
+
+```json
+{
+  "type": "fleet",
   "action": "fleet-update",
+  "fleetId": "FLEET-001",
+  "vehicleCount": 25
+}
+```
+
+**Car Event:**
+
+```json
+{
+  "type": "car",
+  "action": "status-update",
   "vehicleId": "CAR-001",
   "status": "available",
   "location": {
@@ -191,6 +221,12 @@ The application will open at `http://localhost:3000`
   }
 }
 ```
+
+**Kafka Topic Routing:**
+
+- `type: "org"` → `orgcarfleet-org-events`
+- `type: "fleet"` → `orgcarfleet-fleet-events`
+- `type: "car"` → `orgcarfleet-car-events`
 
 ### Response Format
 
@@ -246,16 +282,29 @@ To modify the React app:
 1. Edit files in `frontend/src/`
 2. Changes will hot-reload automatically with `npm start`
 
-### Testing API Locally
+### Testing API
 
-You can test the API with curl (replace with your values):
+**Single Request with curl:**
 
 ```bash
-curl -X POST https://YOUR_API_ID.execute-api.REGION.amazonaws.com/dev/request \
+curl -X POST https://YOUR_API_ID.execute-api.REGION.amazonaws.com/dev/api \
   -H "Authorization: YOUR_ID_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"test": "data"}'
+  -d '{"type": "car", "action": "status-update", "vehicleId": "CAR-001", "status": "available"}'
 ```
+
+**Load Testing (1000 requests, 100 concurrent):**
+
+```bash
+cd scripts
+./load-test.sh https://YOUR_API_ID.execute-api.REGION.amazonaws.com/dev YOUR_ID_TOKEN
+```
+
+The load test script will:
+
+- Send 1000 requests with 100 concurrent workers
+- Rotate through car, fleet, and org event types
+- Display statistics including success rate, response times (min/avg/max/p50/p95/p99), and throughput
 
 ## Security Considerations
 

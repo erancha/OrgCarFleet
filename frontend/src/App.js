@@ -35,6 +35,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [requestData, setRequestData] = useState('');
+  const [requestCount, setRequestCount] = useState(1);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
   const [sending, setSending] = useState(false);
@@ -196,22 +197,42 @@ function App() {
         bodyData = { message: requestData };
       }
 
-      const response = await fetch(`${config.apiUrl}/api`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: idToken,
-        },
-        body: JSON.stringify(bodyData),
-      });
+      // Send multiple requests
+      const count = Math.min(Math.max(1, requestCount), 1000); // Clamp between 1 and 1000
+      const results = [];
+      const errors = [];
 
-      const data = await response.json();
+      for (let i = 0; i < count; i++) {
+        try {
+          const response = await fetch(`${config.apiUrl}/api`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: idToken,
+            },
+            body: JSON.stringify(bodyData),
+          });
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Request failed');
+          const data = await response.json();
+
+          if (!response.ok) {
+            errors.push({ requestNumber: i + 1, error: data.error || 'Request failed' });
+          } else {
+            results.push({ requestNumber: i + 1, ...data });
+          }
+        } catch (err) {
+          errors.push({ requestNumber: i + 1, error: err.message });
+        }
       }
 
-      setResponse(data);
+      // Set response with summary
+      setResponse({
+        totalRequests: count,
+        successful: results.length,
+        failed: errors.length,
+        results: count === 1 ? results[0] : results.slice(0, 5), // Show first 5 if multiple
+        errors: errors.length > 0 ? errors.slice(0, 5) : undefined, // Show first 5 errors if any
+      });
       setRequestData('');
     } catch (err) {
       console.error('Error sending request:', err);
@@ -264,12 +285,28 @@ function App() {
           <textarea
             value={requestData}
             onChange={(e) => setRequestData(e.target.value)}
-            placeholder='Enter JSON data, e.g., {"action": "test", "data": "hello"}'
+            placeholder='Enter JSON data, e.g., {"type": "car", "action": "test", "data": "hello"}'
             rows={6}
             className='textarea'
           />
+          <div style={{ marginBottom: '1rem' }}>
+            <label htmlFor='requestCount' style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              Number of Requests:
+            </label>
+            <select
+              id='requestCount'
+              value={requestCount}
+              onChange={(e) => setRequestCount(parseInt(e.target.value))}
+              style={{ padding: '0.5rem', width: '150px', fontSize: '1rem' }}
+            >
+              <option value='1'>1</option>
+              <option value='10'>10</option>
+              <option value='100'>100</option>
+              <option value='1000'>1000</option>
+            </select>
+          </div>
           <button onClick={sendRequest} disabled={sending || !requestData.trim()} className='btn btn-primary'>
-            {sending ? 'Sending...' : 'Send Request'}
+            {sending ? `Sending ${requestCount} request${requestCount > 1 ? 's' : ''}...` : `Send ${requestCount} Request${requestCount > 1 ? 's' : ''}`}
           </button>
 
           {error && (

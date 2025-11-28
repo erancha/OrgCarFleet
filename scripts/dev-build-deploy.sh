@@ -95,6 +95,7 @@ sam deploy \
         "Environment=${ENVIRONMENT}" \
         "ExistingUserPoolId=${USER_POOL_ID}" \
         "ExistingCognitoDomain=${COGNITO_DOMAIN}" \
+        "KafkaBrokerEndpoint=ec2-3-71-113-150.${REGION}.compute.amazonaws.com:19092" \
     --no-confirm-changeset \
     --no-fail-on-empty-changeset
 
@@ -143,4 +144,10 @@ echo -e "${WHITE}1. Run 'cd ../frontend && npm install && npm start'${NC}"
 echo -e "${WHITE}2. (If not automatically opened) Open http://localhost:3000 in your browser${NC}"
 echo -e "${WHITE}3. Sign in with Google to test the application${NC}"
 
+# Clear CloudWatch logs in background
+echo -e "\n${CYAN}Clearing CloudWatch logs in background...${NC}"
+"${SCRIPT_DIR}/clear-logs.sh" "${STACK_NAME}" &
+
+# Start frontend in background
+echo -e "\n${CYAN}Starting frontend...${NC}"
 cd ../frontend && npm install && npm start
