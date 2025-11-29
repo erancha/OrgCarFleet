@@ -36,7 +36,7 @@ A serverless fleet management system built with AWS API Gateway, Google authenti
 
 ## Architecture
 
-![Architecture Diagram](diagram-export-11-27-2025-11_23_52-PM.png)
+![Architecture Diagram](diagram-export-11-29-2025-12_03_45-PM.png)
 
 ### High-Level Flow
 
@@ -49,7 +49,7 @@ This hybrid serverless architecture is designed for **high-scale ingestion** wit
 
 1. **API Gateway (HTTP API)** - Handles incoming HTTP requests with Cognito authorization
 
-2. **Cognito User Pool** - Manages Google OAuth authentication (shared with Summaries.AI)
+2. **Cognito User Pool** - Manages Google OAuth authentication
 
 3. **Ingestion Lambda** - Validates and authenticates requests, pushes events to SQS
 
@@ -119,12 +119,16 @@ _Note: Costs exclude Kafka cluster (MSK), SQS storage, and data transfer. Batch 
 ```
 OrgCarFleet/
 ├── backend/
-│   ├── rest-api/
-│   │   ├── index.js       # REST API Lambda handler (API Gateway → SQS)
-│   │   └── package.json   # Lambda dependencies
-│   └── sqs-to-kafka/
-│       ├── index.js       # Batch producer Lambda handler (SQS → Kafka)
-│       └── package.json   # Lambda dependencies (kafkajs)
+│   └── ingestion-service/
+│       ├── rest-api/
+│       │   ├── index.js       # REST API Lambda handler (API Gateway → SQS)
+│       │   └── package.json   # Lambda dependencies
+│       ├── sqs-to-kafka/
+│       │   ├── index.js       # Batch producer Lambda handler (SQS → Kafka)
+│       │   └── package.json   # Lambda dependencies (kafkajs)
+│       └── scripts/
+│           ├── template.yaml    # CloudFormation/SAM template for ingestion service
+│           └── build-deploy.sh  # Ingestion service deployment script
 ├── frontend/
 │   ├── public/
 │   │   └── index.html
@@ -136,9 +140,11 @@ OrgCarFleet/
 │   │   └── index.css      # Global styles
 │   └── package.json       # Frontend dependencies
 ├── scripts/
-│   ├── aws-configure.sh     # AWS credentials configuration
-│   ├── template.yaml        # CloudFormation/SAM template
-│   └── dev-build-deploy.sh  # Deployment script
+│   ├── aws-config.sh      # AWS credentials configuration
+│   ├── cognito-config.sh  # Cognito User Pool configuration helper
+│   ├── colors.sh          # Console color definitions
+│   ├── build-deploy.sh    # Main deployment orchestrator
+│   └── clear-logs.sh      # CloudWatch logs cleanup
 └── README.md
 ```
 
@@ -146,24 +152,41 @@ OrgCarFleet/
 
 ### 1. Configure AWS Credentials and region
 
-The deployment uses AWS credentials configured in `scripts/aws-configure.sh`.
+The deployment uses AWS credentials configured in `scripts/aws-config.sh`.
 
 ### 2. Deploy Backend
 
+#### Option A: Deploy All Services (Recommended)
+
 ```bash
 cd /c/Projects/AWS/OrgCarFleet/scripts
-chmod +x dev-build-deploy.sh
-./dev-build-deploy.sh dev
+chmod +x build-deploy.sh
+./build-deploy.sh dev
 ```
 
 This deployment script:
 
-- Installs backend dependencies
-- Builds the SAM application
-- Deploys to AWS CloudFormation
+- Orchestrates the deployment of all services
+- Calls the ingestion service deployment script
+- Builds and deploys Lambda functions with SAM
 - Creates Cognito User Pool Client automatically
 - Outputs the API Gateway URL and other resources
 - Generates `frontend/src/config.js` with all configuration (including Client ID)
+- Clears CloudWatch logs and starts the frontend automatically
+
+#### Option B: Deploy Ingestion Service Only
+
+```bash
+cd /c/Projects/AWS/OrgCarFleet/backend/ingestion-service/scripts
+chmod +x build-deploy.sh
+./build-deploy.sh dev
+```
+
+This allows independent deployment of the ingestion service. The script automatically:
+
+- Sources AWS and Cognito configuration from shared helper scripts
+- Configures Kafka broker endpoint
+- Deploys API Gateway, Lambda functions, and SQS resources
 
 ### 3. Run Frontend
 

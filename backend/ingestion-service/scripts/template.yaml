@@ -92,7 +92,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'RESTIngestion-${AWS::StackName}'
-      CodeUri: ../backend/rest-api
+      CodeUri: ../rest-api
       Handler: index.handler
       Role: !GetAtt RESTIngestionLambdaRole.Arn
       Events:
@@ -157,7 +157,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub 'SQSToKafka-${AWS::StackName}'
-      CodeUri: ../backend/sqs-to-kafka
+      CodeUri: ../sqs-to-kafka
       Handler: index.handler
       Role: !GetAtt SQSToKafkaLambdaRole.Arn
       Timeout: 60
