@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  car-telemetry-service:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: orgcarfleet-telemetry-service
+    environment:
+      - DOTNET_ENVIRONMENT=Production
+      # External Kafka broker (AWS EC2)
+      - Kafka__BootstrapServers=${KAFKA_BROKER_ENDPOINT:-ec2-3-71-113-150.eu-central-1.compute.amazonaws.com:19092}
+      - Kafka__GroupId=car-telemetry-consumer-group
+      - Kafka__Topics__0=orgcarfleet-org-events
+      - Kafka__Topics__1=orgcarfleet-fleet-events
+      - Kafka__Topics__2=orgcarfleet-car-events
+      - Kafka__AutoOffsetReset=earliest
+      - Kafka__EnableAutoCommit=false
+      # External PostgreSQL server (AWS EC2)
+      - Postgres__Host=${POSTGRES_HOST:-ec2-63-180-181-179.eu-central-1.compute.amazonaws.com}
+      - Postgres__Port=${POSTGRES_PORT:-5432}
+      - Postgres__Database=${POSTGRES_DB:-orgcarfleet_db}
+      - Postgres__Username=${POSTGRES_USERNAME:-postgres}
+      - Postgres__Password=${POSTGRES_PASSWORD:-vsdb-postgres}
+    network_mode: host
+    restart: unless-stopped

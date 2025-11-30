@@ -15,6 +15,8 @@ source "${SCRIPT_DIR}/colors.sh"
 REGION="${AWS_DEFAULT_REGION}"
 INGESTION_SERVICE_DIR="../backend/ingestion-service"
 INGESTION_DEPLOY_SCRIPT="${INGESTION_SERVICE_DIR}/scripts/build-deploy.sh"
+CAR_TELEMETRY_SERVICE_DIR="../backend/car-telemetry-service"
+CAR_TELEMETRY_DEPLOY_SCRIPT="${CAR_TELEMETRY_SERVICE_DIR}/scripts/build-deploy.sh"
 
 # Get AWS Account ID
 echo -e "${CYAN}Getting AWS Account ID...${NC}"
@@ -58,7 +60,28 @@ API_URL=$(echo "${INGESTION_OUTPUT}" | grep "^API_URL=" | cut -d'=' -f2)
 CLIENT_ID=$(echo "${INGESTION_OUTPUT}" | grep "^CLIENT_ID=" | cut -d'=' -f2)
 QUEUE_URL=$(echo "${INGESTION_OUTPUT}" | grep "^QUEUE_URL=" | cut -d'=' -f2)
 
-echo -e "\n${GREEN}=== Deployment Successful ===${NC}"
+# Deploy Car Telemetry Service
+echo -e "\n${CYAN}Deploying Car Telemetry Service...${NC}"
+if [ ! -f "${CAR_TELEMETRY_DEPLOY_SCRIPT}" ]; then
+    echo -e "${RED}Error: Car telemetry service deployment script not found at ${CAR_TELEMETRY_DEPLOY_SCRIPT}${NC}"
+    exit 1
+fi
+
+chmod +x "${CAR_TELEMETRY_DEPLOY_SCRIPT}"
+
+# Run car telemetry service deployment
+cd "${CAR_TELEMETRY_SERVICE_DIR}"
+"${CAR_TELEMETRY_DEPLOY_SCRIPT}" up
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Car telemetry service deployment failed${NC}"
+    exit 1
+fi
+
+cd "${SCRIPT_DIR}"
+echo -e "${GREEN}Car Telemetry Service deployed successfully${NC}"
+
+echo -e "\n${GREEN}=== All Services Deployed Successfully ===${NC}"
 
 # Create frontend config
 cat > "../frontend/src/config.js" << EOF
