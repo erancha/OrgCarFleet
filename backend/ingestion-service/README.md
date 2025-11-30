@@ -15,7 +15,6 @@ A serverless event ingestion service built with AWS Lambda, API Gateway, SQS, an
 - [Deployment](#deployment)
 - [Monitoring & Observability](#monitoring--observability)
 - [Security](#security)
-- [Troubleshooting](#troubleshooting)
 
 <!-- tocstop -->
 
@@ -170,38 +169,3 @@ _Batch Producer Lambda:_ `Invocations`, `Errors`, `Duration`, `IteratorAge`
 - IAM roles follow least-privilege principle
 - Lambda functions can be deployed in VPC for private Kafka access
 - TLS/SSL encryption for all Kafka connections
-
-## Troubleshooting
-
-**"Unauthorized" Error:**
-
-- Ensure Cognito ID token is valid and not expired
-- Check Cognito App Client ID matches authorizer configuration
-- Verify token is in `Authorization` header
-
-**"Failed to send request" Error:**
-
-- Check API Gateway URL is correct
-- Verify Lambda has `sqs:SendMessage` permission
-- Check CloudWatch Logs for Lambda errors
-
-**Messages Not Reaching Kafka:**
-
-- Check batch producer Lambda CloudWatch Logs for Kafka connection errors
-- Verify Kafka broker endpoints are correct and accessible
-- Ensure Kafka credentials in Secrets Manager are valid
-- Check Lambda VPC configuration if Kafka is in private subnet
-- Verify security groups allow outbound traffic to Kafka port (19092)
-
-**High SQS Queue Depth:**
-
-- Check batch producer Lambda for errors or throttling
-- Verify Kafka cluster is healthy
-- Increase Lambda reserved concurrency if needed
-- Check SQS event source mapping configuration
-
-**Lambda Cold Starts:**
-
-- Consider enabling Provisioned Concurrency for batch producer Lambda
-- Optimize Lambda package size
-- Use Lambda layers for shared dependencies

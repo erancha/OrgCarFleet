@@ -17,7 +17,6 @@ A .NET Core microservice that consumes telemetry data from Kafka topics and stor
 - [Deployment](#deployment)
 - [Testing](#testing)
 - [Monitoring](#monitoring)
-- [Troubleshooting](#troubleshooting)
 
 <!-- tocstop -->
 
@@ -217,32 +216,3 @@ kafka-consumer-groups \
     --describe \
     --group car-telemetry-consumer-group
 ```
-
-## Troubleshooting
-
-**Service won't start:**
-
-- Check Docker is running: `docker info`
-- Check logs: `docker-compose logs car-telemetry-service`
-- Verify Kafka is healthy: `docker-compose ps`
-
-**No messages being consumed:**
-
-- Verify network connectivity to Kafka broker: `telnet ec2-3-71-113-150.eu-central-1.compute.amazonaws.com 19092`
-- Check Kafka topics exist on external broker
-- Verify security groups allow inbound traffic on port 19092
-- Check consumer group status: See monitoring section above
-
-**Database connection issues:**
-
-- Verify network connectivity to PostgreSQL: `telnet ec2-63-180-181-179.eu-central-1.compute.amazonaws.com 5432`
-- Check connection string in logs
-- Verify security groups allow inbound traffic on port 5432
-- Test connection: `psql -h ec2-63-180-181-179.eu-central-1.compute.amazonaws.com -U postgres -d orgcarfleet_db -c "SELECT version();"`
-
-**Security Group Configuration:**
-
-Ensure AWS EC2 security groups allow:
-
-- **Kafka**: Inbound TCP port 19092 from your deployment host
-- **PostgreSQL**: Inbound TCP port 5432 from your deployment host
