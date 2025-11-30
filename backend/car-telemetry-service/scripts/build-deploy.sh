@@ -7,6 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_NAME="orgcarfleet"
 
 echo "=========================================="
 echo "Car Telemetry Service Deployment"
@@ -59,41 +60,41 @@ case $COMMAND in
             fi
         fi
         
-        docker-compose up -d
+        docker-compose -p "$PROJECT_NAME" up -d
         print_info "Services started successfully!"
         print_info "Checking service status..."
-        docker-compose ps
+        docker-compose -p "$PROJECT_NAME" ps
         ;;
     
     down)
         print_info "Stopping services..."
-        docker-compose down
+        docker-compose -p "$PROJECT_NAME" down
         print_info "Services stopped successfully!"
         ;;
     
     restart)
         print_info "Restarting services..."
-        docker-compose restart
+        docker-compose -p "$PROJECT_NAME" restart
         print_info "Services restarted successfully!"
         ;;
     
     rebuild)
         print_info "Rebuilding and restarting services..."
-        docker-compose down
-        docker-compose build --no-cache
-        docker-compose up -d
+        docker-compose -p "$PROJECT_NAME" down
+        docker-compose -p "$PROJECT_NAME" build --no-cache
+        docker-compose -p "$PROJECT_NAME" up -d
         print_info "Services rebuilt and started successfully!"
         ;;
     
     logs)
         SERVICE=${2:-car-telemetry-service}
         print_info "Showing logs for $SERVICE..."
-        docker-compose logs -f "$SERVICE"
+        docker-compose -p "$PROJECT_NAME" logs -f "$SERVICE"
         ;;
     
     status)
         print_info "Service status:"
-        docker-compose ps
+        docker-compose -p "$PROJECT_NAME" ps
         ;;
     
     clean)
@@ -101,7 +102,7 @@ case $COMMAND in
         read -r response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
             print_info "Cleaning up..."
-            docker-compose down -v --rmi all
+            docker-compose -p "$PROJECT_NAME" down -v --rmi all
             print_info "Cleanup complete!"
         else
             print_info "Cleanup cancelled."
