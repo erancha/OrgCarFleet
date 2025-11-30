@@ -125,15 +125,6 @@ kafka-topics --list --bootstrap-server ec2-3-71-113-150.eu-central-1.compute.ama
 
 ## Deployment
 
-**Option A: Deploy via main orchestrator (recommended):**
-
-```bash
-cd ../../scripts
-./build-deploy.sh dev
-```
-
-**Option B: Deploy ingestion service only:**
-
 ```bash
 cd scripts
 chmod +x build-deploy.sh
