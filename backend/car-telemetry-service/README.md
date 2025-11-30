@@ -45,7 +45,7 @@ car-telemetry-service/
 
 1. **Kafka Integration**
 
-   - Consumes from multiple topics: `orgcarfleet-org-events`, `orgcarfleet-fleet-events`, `orgcarfleet-car-events`
+   - Consumes from `orgcarfleet-car-events` topic
    - Manual offset management for reliable processing
    - Automatic reconnection and error handling
 
@@ -55,11 +55,6 @@ car-telemetry-service/
    - Geospatial indexing for location queries
    - Stores raw JSON for full message preservation
    - Tracks processing timestamps
-
-3. **Logging**
-   - Structured logging with configurable levels
-   - Message processing tracking
-   - Error logging with context
 
 ## Prerequisites
 

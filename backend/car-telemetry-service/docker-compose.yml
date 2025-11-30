@@ -1,5 +1,3 @@
-version: '3.8'
-
 name: orgcarfleet
 
 services:
@@ -32,9 +30,7 @@ services:
       # External Kafka broker (AWS EC2)
       - Kafka__BootstrapServers=${KAFKA_BROKER_ENDPOINT:-ec2-3-71-113-150.eu-central-1.compute.amazonaws.com:19092}
       - Kafka__GroupId=car-telemetry-consumer-group
-      - Kafka__Topics__0=orgcarfleet-org-events
-      - Kafka__Topics__1=orgcarfleet-fleet-events
-      - Kafka__Topics__2=orgcarfleet-car-events
+      - Kafka__Topics__0=orgcarfleet-car-events
       - Kafka__AutoOffsetReset=earliest
       - Kafka__EnableAutoCommit=false
       # Local PostgreSQL/PostGIS container

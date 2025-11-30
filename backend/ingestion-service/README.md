@@ -18,7 +18,7 @@ A serverless event ingestion service built with AWS Lambda, API Gateway, SQS, an
 
 ## Architecture
 
-This hybrid serverless architecture is designed for **high-scale ingestion** with low initial cost and the ability to scale efficiently.
+This hybrid serverless architecture is designed for **high-scale ingestion** with low initial cost
 
 ### Data Flow
 

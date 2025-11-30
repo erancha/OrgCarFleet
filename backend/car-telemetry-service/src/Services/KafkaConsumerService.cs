@@ -47,8 +47,19 @@ public class KafkaConsumerService : BackgroundService
             .SetErrorHandler((_, e) => _logger.LogError("Kafka error: {Reason}", e.Reason))
             .Build();
 
+        // Validate topics configuration
+        if (_kafkaSettings.Topics == null || _kafkaSettings.Topics.Count == 0)
+        {
+            _logger.LogError("No Kafka topics configured. Topics list is empty or null.");
+            throw new InvalidOperationException("Kafka topics configuration is missing or empty. Please configure Kafka:Topics in appsettings.json or environment variables.");
+        }
+
+        _logger.LogInformation("Attempting to subscribe to {Count} topic(s): {Topics}", 
+            _kafkaSettings.Topics.Count, 
+            string.Join(", ", _kafkaSettings.Topics));
+
         _consumer.Subscribe(_kafkaSettings.Topics);
-        _logger.LogInformation("Subscribed to topics: {Topics}", string.Join(", ", _kafkaSettings.Topics));
+        _logger.LogInformation("Successfully subscribed to topics: {Topics}", string.Join(", ", _kafkaSettings.Topics));
 
         try
         {
