@@ -13,8 +13,6 @@ A serverless event ingestion service built with AWS Lambda, API Gateway, SQS, an
 - [Configuration](#configuration)
 - [Development](#development)
 - [Deployment](#deployment)
-- [Monitoring & Observability](#monitoring--observability)
-- [Security](#security)
 
 <!-- tocstop -->
 
@@ -130,33 +128,3 @@ cd scripts
 chmod +x build-deploy.sh
 ./build-deploy.sh dev
 ```
-
-## Monitoring & Observability
-
-**CloudWatch Metrics:**
-
-_API Gateway:_ `Count`, `4XXError`, `5XXError`, `Latency`  
-_REST API Lambda:_ `Invocations`, `Errors`, `Duration`, `Throttles`  
-_SQS Queue:_ `ApproximateNumberOfMessagesVisible`, `ApproximateAgeOfOldestMessage`  
-_Batch Producer Lambda:_ `Invocations`, `Errors`, `Duration`, `IteratorAge`
-
-**CloudWatch Logs:**
-
-- `/aws/lambda/orgcarfleet-rest-api-{stage}`
-- `/aws/lambda/orgcarfleet-sqs-to-kafka-{stage}`
-
-**Recommended Alarms:**
-
-- High SQS Queue Depth: `ApproximateNumberOfMessagesVisible > 10000`
-- Old Messages: `ApproximateAgeOfOldestMessage > 300` seconds
-- Lambda Errors: `Errors > 10` in 5 minutes
-- Lambda Throttles: `Throttles > 0`
-- API Gateway 5XX: `5XXError > 1%` of requests
-
-## Security
-
-- Cognito Authorizer validates JWT tokens from Cognito User Pool
-- Kafka credentials stored in AWS Secrets Manager
-- IAM roles follow least-privilege principle
-- Lambda functions can be deployed in VPC for private Kafka access
-- TLS/SSL encryption for all Kafka connections

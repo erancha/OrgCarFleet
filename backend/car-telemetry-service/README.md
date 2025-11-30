@@ -16,7 +16,6 @@ A .NET Core microservice that consumes telemetry data from Kafka topics and stor
   * [Build Docker Image](#build-docker-image)
 - [Deployment](#deployment)
 - [Testing](#testing)
-- [Monitoring](#monitoring)
 
 <!-- tocstop -->
 
@@ -191,28 +190,4 @@ SELECT car_id, speed, ST_Distance(location, ST_MakePoint(34.7818, 32.0853)::geog
 FROM car_telemetry
 WHERE ST_DWithin(location, ST_MakePoint(34.7818, 32.0853)::geography, 10000)
 ORDER BY distance_meters;
-```
-
-## Monitoring
-
-**View Service Logs:**
-
-```bash
-docker-compose logs -f car-telemetry-service
-```
-
-**View Kafka Topics:**
-
-```bash
-# Requires Kafka CLI tools installed locally or on the Kafka server
-kafka-topics --list --bootstrap-server ec2-3-71-113-150.eu-central-1.compute.amazonaws.com:19092
-```
-
-**View Consumer Groups:**
-
-```bash
-kafka-consumer-groups \
-    --bootstrap-server ec2-3-71-113-150.eu-central-1.compute.amazonaws.com:19092 \
-    --describe \
-    --group car-telemetry-consumer-group
 ```
