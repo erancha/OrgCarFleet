@@ -6,7 +6,6 @@ A .NET Core microservice that consumes telemetry data from Kafka topics and stor
 
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
-- [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Development](#development)
@@ -18,7 +17,7 @@ A .NET Core microservice that consumes telemetry data from Kafka topics and stor
 
 ## Architecture
 
-- **Kafka Consumer**: Subscribes to `orgcarfleet-{org|fleet|car}-events` topics
+- **Kafka Consumer**: Subscribes to `orgcarfleet-car-events` topics
 - **PostGIS Storage**: Stores telemetry data with geospatial indexing
 - **Dependency Injection**: Clean architecture with DI container
 
@@ -40,21 +39,6 @@ car-telemetry-service/
 ├── docker-compose.yml            # Multi-container orchestration
 └── README.md                     # This file
 ```
-
-## Features
-
-1. **Kafka Integration**
-
-   - Consumes from `orgcarfleet-car-events` topic
-   - Manual offset management for reliable processing
-   - Automatic reconnection and error handling
-
-2. **PostGIS Storage**
-
-   - Automatic database and table initialization
-   - Geospatial indexing for location queries
-   - Stores raw JSON for full message preservation
-   - Tracks processing timestamps
 
 ## Prerequisites
 
