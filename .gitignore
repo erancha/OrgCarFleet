@@ -34,3 +34,4 @@ frontend/src/config.js
 
 # SAM
 samconfig.toml
+backend/car-telemetry-service/src/appsettings.Production.json

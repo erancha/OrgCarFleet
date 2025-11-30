@@ -20,7 +20,7 @@ services:
       - Postgres__Host=${POSTGRES_HOST:-ec2-63-180-181-179.eu-central-1.compute.amazonaws.com}
       - Postgres__Port=${POSTGRES_PORT:-5432}
       - Postgres__Database=${POSTGRES_DB:-orgcarfleet_db}
-      - Postgres__Username=${POSTGRES_USERNAME:-postgres}
-      - Postgres__Password=${POSTGRES_PASSWORD:-vsdb-postgres}
+      - Postgres__Username=${POSTGRES_USERNAME}
+      - Postgres__Password=${POSTGRES_PASSWORD}
     network_mode: host
     restart: unless-stopped

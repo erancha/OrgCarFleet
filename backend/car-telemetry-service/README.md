@@ -87,16 +87,7 @@ Create a `.env` file based on the template. Configuration priority (highest to l
 
 **Kafka Broker (AWS EC2)**
 
-- Host: `ec2-3-71-113-150.eu-central-1.compute.amazonaws.com:19092`
-- Consumer Group: `car-telemetry-consumer-group`
-- Topics: `orgcarfleet-org-events`, `orgcarfleet-fleet-events`, `orgcarfleet-car-events`
-
 **PostgreSQL/PostGIS (AWS EC2)**
-
-- Host: `ec2-63-180-181-179.eu-central-1.compute.amazonaws.com:5432`
-- Database: `orgcarfleet_db`
-- User: `postgres` (TODO: Use AWS Secrets Manager)
-- Password: `vsdb-postgres` (TODO: Use AWS Secrets Manager)
 
 ## Database Schema
 
