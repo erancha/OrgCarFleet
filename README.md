@@ -4,11 +4,22 @@ A serverless fleet management system built with AWS services, featuring event-dr
 
 ## Table of Contents
 
+<!-- toc -->
+
 - [Architecture](#architecture)
+  * [Data Flow](#data-flow)
+  * [Key Components](#key-components)
+  * [Architecture Principles](#architecture-principles)
 - [Services](#services)
+  * [1. Ingestion Service](#1-ingestion-service)
+  * [2. Car Telemetry Service](#2-car-telemetry-service)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
-- [Development](#development)
+  * [Prerequisites](#prerequisites)
+  * [Deploy All Services](#deploy-all-services)
+  * [Deploy Individual Services](#deploy-individual-services)
+
+<!-- tocstop -->
 
 ## Architecture
 
