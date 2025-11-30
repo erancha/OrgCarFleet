@@ -35,8 +35,30 @@ TOTAL_REQUESTS="${3:-100}"
 CONCURRENT_WORKERS="${4:-10}"
 PAYLOAD_TYPE="${5:-round-robin}"
 
-# Sample payloads
-PAYLOAD_CAR='{"type":"car","action":"status-update","vehicleId":"CAR-001","status":"available","location":{"lat":40.7128,"lng":-74.006}}'
+# Tel Aviv center coordinates
+TEL_AVIV_LAT=32.0853
+TEL_AVIV_LNG=34.7818
+RADIUS_KM=1.0
+
+# Function to generate random location within radius
+generate_random_location() {
+    # Generate random angle (0-360 degrees)
+    local angle=$(awk -v seed=$RANDOM 'BEGIN{srand(seed); print rand() * 360}')
+    # Generate random distance (0-1000m)
+    local distance=$(awk -v seed=$RANDOM 'BEGIN{srand(seed); print rand() * 1000}')
+    
+    # Convert to lat/lng offset (approximate, 1 degree ≈ 111km)
+    local lat_offset=$(awk -v dist=$distance -v angle=$angle 'BEGIN{print (dist/111000) * cos(angle * 3.14159/180)}')
+    local lng_offset=$(awk -v dist=$distance -v angle=$angle -v lat=$TEL_AVIV_LAT 'BEGIN{print (dist/111000) * sin(angle * 3.14159/180) / cos(lat * 3.14159/180)}')
+    
+    # Calculate new coordinates
+    local new_lat=$(awk -v base=$TEL_AVIV_LAT -v offset=$lat_offset 'BEGIN{printf "%.6f", base + offset}')
+    local new_lng=$(awk -v base=$TEL_AVIV_LNG -v offset=$lng_offset 'BEGIN{printf "%.6f", base + offset}')
+    
+    echo "$new_lat,$new_lng"
+}
+
+# Sample payloads (car payload will be generated dynamically with random location)
 PAYLOAD_FLEET='{"type":"fleet","action":"fleet-update","fleetId":"FLEET-001","vehicleCount":25}'
 PAYLOAD_ORG='{"type":"org","action":"org-created","orgId":"ORG-001","name":"Acme Corporation"}'
 
@@ -64,7 +86,11 @@ send_request() {
     # Determine payload based on PAYLOAD_TYPE parameter
     case $PAYLOAD_TYPE in
         "car")
-            payload="$PAYLOAD_CAR"
+            # Generate random location for car payload
+            local coords=$(generate_random_location)
+            local lat=$(echo $coords | cut -d',' -f1)
+            local lng=$(echo $coords | cut -d',' -f2)
+            payload="{\"type\":\"car\",\"action\":\"status-update\",\"vehicleId\":\"CAR-$(printf '%03d' $((request_num % 100)))\",\"status\":\"available\",\"location\":{\"lat\":$lat,\"lng\":$lng}}"
             ;;
         "fleet")
             payload="$PAYLOAD_FLEET"
@@ -76,7 +102,13 @@ send_request() {
             # Round-robin through all three types
             local payload_type=$((request_num % 3))
             case $payload_type in
-                0) payload="$PAYLOAD_CAR" ;;
+                0) 
+                    # Generate random location for car payload
+                    local coords=$(generate_random_location)
+                    local lat=$(echo $coords | cut -d',' -f1)
+                    local lng=$(echo $coords | cut -d',' -f2)
+                    payload="{\"type\":\"car\",\"action\":\"status-update\",\"vehicleId\":\"CAR-$(printf '%03d' $((request_num % 100)))\",\"status\":\"available\",\"location\":{\"lat\":$lat,\"lng\":$lng}}"
+                    ;;
                 1) payload="$PAYLOAD_FLEET" ;;
                 2) payload="$PAYLOAD_ORG" ;;
             esac
@@ -103,8 +135,8 @@ send_request() {
     rm -f "$temp_response"
 }
 
-export -f send_request
-export API_URL ID_TOKEN PAYLOAD_CAR PAYLOAD_FLEET PAYLOAD_ORG PAYLOAD_TYPE TEMP_DIR
+export -f send_request generate_random_location
+export API_URL ID_TOKEN PAYLOAD_FLEET PAYLOAD_ORG PAYLOAD_TYPE TEMP_DIR TEL_AVIV_LAT TEL_AVIV_LNG
 
 # Generate request numbers and run in parallel
 echo "Starting load test..."
