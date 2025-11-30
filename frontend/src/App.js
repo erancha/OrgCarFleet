@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { config } from './config';
 import './App.css';
 
-// Manual OAuth helper functions
+// Manual OIDC helper functions
 const generateCodeVerifier = () => {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
@@ -57,12 +57,12 @@ function App() {
       const state = urlParams.get('state');
 
       if (code && state) {
-        const savedState = sessionStorage.getItem('oauth_state');
+        const savedState = sessionStorage.getItem('oidc_state');
         const codeVerifier = sessionStorage.getItem('code_verifier');
 
         // Only process if we have the matching state and verifier
         if (savedState && codeVerifier && state === savedState) {
-          console.log('Processing OAuth callback...');
+          console.log('Processing OIDC callback...');
 
           // Exchange code for tokens
           const tokenUrl = `https://${config.cognitoDomain}/oauth2/token`;
@@ -99,7 +99,7 @@ function App() {
           setUser({ email: payload.email, sub: payload.sub, name: payload.name });
 
           // Clean up
-          sessionStorage.removeItem('oauth_state');
+          sessionStorage.removeItem('oidc_state');
           sessionStorage.removeItem('code_verifier');
         }
 
@@ -143,7 +143,7 @@ function App() {
       const codeVerifier = generateCodeVerifier();
       const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-      sessionStorage.setItem('oauth_state', state);
+      sessionStorage.setItem('oidc_state', state);
       sessionStorage.setItem('code_verifier', codeVerifier);
 
       const authUrl =

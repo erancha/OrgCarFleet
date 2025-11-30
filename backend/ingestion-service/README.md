@@ -64,7 +64,7 @@ ingestion-service/
 - Node.js 20+ and npm
 - AWS CLI configured with appropriate credentials
 - AWS SAM CLI installed
-- Existing Cognito User Pool with Google OAuth configured
+- Existing Cognito User Pool with Google OIDC configured
 - Kafka cluster accessible from Lambda (AWS EC2)
 
 ## Configuration

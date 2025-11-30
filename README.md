@@ -34,7 +34,7 @@ Kafka → Car Telemetry Service (Kafka Consumer) → PostGIS Database
 
 ### Key Components
 
-1. **Frontend** - React SPA with Google OAuth via Cognito
+1. **Frontend** - React SPA with Google OIDC via Cognito
 2. **API Gateway** - HTTP API with Cognito authorizer
 3. **Ingestion Service** - Serverless event ingestion (Lambda + SQS + Kafka producer)
 4. **Kafka Cluster** - Event streaming backbone (self-managed on AWS EC2)

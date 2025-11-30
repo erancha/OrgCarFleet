@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "6a7cdbd7-2cf3-4ff6-b717-9a9d36cca030",
 		"name": "OrgCarFleet API",
-		"description": "API collection for OrgCarFleet - Fleet Management System with Cognito Google OAuth",
+		"description": "API collection for OrgCarFleet - Fleet Management System",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "9394726"
 	},
