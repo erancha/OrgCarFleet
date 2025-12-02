@@ -21,8 +21,8 @@ services:
 
   car-telemetry-service:
     build:
-      context: ./src
-      dockerfile: Dockerfile
+      context: ../src
+      dockerfile: ../scripts/Dockerfile
     image: car-telemetry-service:latest
     container_name: car-telemetry-service
     environment:
@@ -31,7 +31,7 @@ services:
       - Kafka__BootstrapServers=${KAFKA_BROKER_ENDPOINT:-ec2-3-71-113-150.eu-central-1.compute.amazonaws.com:19092}
       - Kafka__GroupId=car-telemetry-consumer-group
       - Kafka__Topics__0=orgcarfleet-car-events
-      - Kafka__AutoOffsetReset=earliest
+      - Kafka__AutoOffsetReset=latest
       - Kafka__EnableAutoCommit=false
       # Local PostgreSQL/PostGIS container
       - Postgres__Host=postgis
