@@ -95,7 +95,7 @@ public class KafkaConsumerService : IHostedService, IDisposable
 
                         if (!string.IsNullOrEmpty(userId))
                         {
-                            await _connectionManager.PublishToRedisChannel(userId, messageData);
+                            await _connectionManager.SendToUser(userId, messageData);
                         }
                     }
                 }

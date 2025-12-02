@@ -11,8 +11,11 @@ public class ConnectionManager
 {
     private readonly ISubscriber _redisSubscriber;
     private readonly IConnectionMultiplexer _redis;
-    private const string RedisChannelName = "ws-notifications";
-
+    private readonly IDatabase _redisDb;
+    private const string RedisChannelPrefix = "ws-notifications:";
+    private const string UserInstanceMappingHash = "user-instance-mappings";
+    
+    private readonly string _instanceId;
     private readonly ILogger<ConnectionManager> _logger;
 
     // Maps each userId to their active WebSocket connections.
@@ -25,23 +28,34 @@ public class ConnectionManager
         _redis = redis;
         _logger = logger;
         _redisSubscriber = redis.GetSubscriber();
+        _redisDb = redis.GetDatabase();
         
-        // Subscribe to Redis channel to handle horizontal scaling
-        _redisSubscriber.Subscribe(RedisChannel.Literal(RedisChannelName), (channel, message) =>
+        // Generate unique instance ID for this ConnectionManager
+        _instanceId = Guid.NewGuid().ToString();
+        
+        // Subscribe to this instance's specific Redis channel
+        var instanceChannel = RedisChannelPrefix + _instanceId;
+        _redisSubscriber.Subscribe(RedisChannel.Literal(instanceChannel), (channel, message) =>
         {
             HandleIncommingRedisMessage(message);
         });
 
-        _logger.LogInformation("Subscribed to Redis channel {Channel}", RedisChannelName);
+        _logger.LogInformation("ConnectionManager instance {InstanceId} subscribed to Redis channel {Channel}", _instanceId, instanceChannel);
     }
 
-    public void RegisterConnection(string userId, WebSocket socket)
+    public async Task RegisterConnection(string userId, WebSocket socket)
     {
         var userConnections = _userSockets.GetOrAdd(userId, _ => new ConcurrentDictionary<WebSocket, byte>());
         userConnections.TryAdd(socket, 0);
+        
+        // Store mapping from userId to this instance ID in Redis hash (HSET)
+        // More memory-efficient than individual keys, atomic updates
+        await _redisDb.HashSetAsync(UserInstanceMappingHash, userId, _instanceId);
+        
+        _logger.LogInformation("Registered connection for user {UserId} on instance {InstanceId}", userId, _instanceId);
     }
 
-    public void UnregisterConnection(string userId, WebSocket socket)
+    public async Task UnregisterConnection(string userId, WebSocket socket)
     {
         if (_userSockets.TryGetValue(userId, out var userConnections))
         {
@@ -49,26 +63,69 @@ public class ConnectionManager
             if (userConnections.IsEmpty)
             {
                 _userSockets.TryRemove(userId, out _);
+                
+                // Remove mapping from Redis hash when no more connections for this user (HDEL)
+                await _redisDb.HashDeleteAsync(UserInstanceMappingHash, userId);
+                
+                _logger.LogInformation("Unregistered last connection for user {UserId} on instance {InstanceId}", userId, _instanceId);
             }
         }
     }
 
-    // Publish userId + payload to the Redis channel
-    public async Task PublishToRedisChannel(string userId, object payload)
+    // Send message to a specific user - checks local connections first, then routes via Redis
+    public async Task SendToUser(string userId, object payload)
     {
-        // Publish to Redis so ALL instances (including this one) check their connections
+        // Check if user is connected locally
+        if (_userSockets.TryGetValue(userId, out var userConnections) && !userConnections.IsEmpty)
+        {
+            _logger.LogInformation(
+                "User {UserId} found locally on instance {InstanceId}, sending directly to {ConnectionCount} connections",
+                userId,
+                _instanceId,
+                userConnections.Count);
+            
+            await SendToLocalConnections(userId, payload, userConnections);
+        }
+        else
+        {
+            // User not connected locally, check Redis hash for the instance that has this user (HGET)
+            var targetInstanceId = await _redisDb.HashGetAsync(UserInstanceMappingHash, userId);
+            
+            if (targetInstanceId.HasValue)
+            {
+                var targetInstance = targetInstanceId.ToString();
+                _logger.LogInformation(
+                    "User {UserId} not local, routing to instance {TargetInstanceId}",
+                    userId,
+                    targetInstance);
+                
+                // Publish to the specific instance's channel
+                await PublishToInstanceChannel(targetInstance, userId, payload);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "User {UserId} not found in any instance (no Redis hash mapping)",
+                    userId);
+            }
+        }
+    }
+    
+    // Publish to a specific instance's Redis channel
+    private async Task PublishToInstanceChannel(string targetInstanceId, string userId, object payload)
+    {
         var message = JsonConvert.SerializeObject(new { userId, payload });
+        var instanceChannel = RedisChannelPrefix + targetInstanceId;
 
         _logger.LogInformation(
-            "Publishing notification for user {UserId} to Redis channel {Channel}: {Payload}",
+            "Publishing notification for user {UserId} to instance channel {Channel}",
             userId,
-            RedisChannelName,
-            message);
+            instanceChannel);
 
-        await _redisSubscriber.PublishAsync(RedisChannel.Literal(RedisChannelName), message);
+        await _redisSubscriber.PublishAsync(RedisChannel.Literal(instanceChannel), message);
     }
 
-    // Handle incomming message from the Redis channel
+    // Handle incoming message from this instance's Redis channel
     private async void HandleIncommingRedisMessage(RedisValue message)
     {
         if (!message.HasValue) return;
@@ -76,7 +133,9 @@ public class ConnectionManager
         try
         {
             var raw = message.ToString();
-            _logger.LogInformation("Received message from Redis channel {Channel}: {Message}", RedisChannelName, raw);
+            var instanceChannel = RedisChannelPrefix + _instanceId;
+            _logger.LogInformation("Instance {InstanceId} received message from Redis channel {Channel}: {Message}", 
+                _instanceId, instanceChannel, raw);
 
             var data = JsonConvert.DeserializeObject<dynamic>(raw);
             if (data == null) return;
@@ -85,39 +144,54 @@ public class ConnectionManager
             if (string.IsNullOrEmpty(userId)) return;
 
             var payload = data.payload;
-            string jsonPayload = JsonConvert.SerializeObject(payload);
-            var buffer = Encoding.UTF8.GetBytes(jsonPayload);
 
             if (_userSockets.TryGetValue(userId, out var userConnections))
             {
-                _logger.LogInformation(
-                    "Sending WebSocket notification to user {UserId} on {ConnectionCount} active connections",
-                    userId,
-                    userConnections.Count);
-
-                foreach (var socket in userConnections.Keys)
-                {
-                    if (socket.State == WebSocketState.Open)
-                    {
-                        try 
-                        {
-                            await socket.SendAsync(
-                                new ArraySegment<byte>(buffer),
-                                WebSocketMessageType.Text,
-                                true,
-                                CancellationToken.None);
-                        }
-                        catch
-                        {
-                            // Socket likely dead, will be cleaned up by the connection handler
-                        }
-                    }
-                }
+                await SendToLocalConnections(userId, payload, userConnections);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Instance {InstanceId} received message for user {UserId} but user not connected locally",
+                    _instanceId,
+                    userId);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling Redis message");
+            _logger.LogError(ex, "Error handling Redis message on instance {InstanceId}", _instanceId);
+        }
+    }
+    
+    // Send payload to local WebSocket connections
+    private async Task SendToLocalConnections(string userId, object payload, ConcurrentDictionary<WebSocket, byte> userConnections)
+    {
+        string jsonPayload = JsonConvert.SerializeObject(payload);
+        var buffer = Encoding.UTF8.GetBytes(jsonPayload);
+        
+        // _logger.LogInformation(
+        //     "Sending WebSocket notification to user {UserId} on instance {InstanceId} to {ConnectionCount} active connections",
+        //     userId,
+        //     _instanceId,
+        //     userConnections.Count);
+
+        foreach (var socket in userConnections.Keys)
+        {
+            if (socket.State == WebSocketState.Open)
+            {
+                try 
+                {
+                    await socket.SendAsync(
+                        new ArraySegment<byte>(buffer),
+                        WebSocketMessageType.Text,
+                        true,
+                        CancellationToken.None);
+                }
+                catch
+                {
+                    // Socket likely dead, will be cleaned up by the connection handler
+                }
+            }
         }
     }
 }

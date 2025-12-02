@@ -35,7 +35,8 @@ public class WebSocketEndpoint
         using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
         _logger.LogInformation("Client connected: {UserId}", userId);
-        _connectionManager.RegisterConnection(userId, webSocket);
+        // Must await: stores userId-to-instanceId mapping in Redis for cross-instance routing
+        await _connectionManager.RegisterConnection(userId, webSocket);
 
         var buffer = new byte[1024 * 4];
         try
@@ -63,7 +64,8 @@ public class WebSocketEndpoint
         finally
         {
             _logger.LogInformation("Client disconnected: {UserId}", userId);
-            _connectionManager.UnregisterConnection(userId, webSocket);
+            // Must await: removes userId-to-instanceId mapping from Redis when last connection closes
+            await _connectionManager.UnregisterConnection(userId, webSocket);
         }
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using RealtimeNotifications;
 using RealtimeNotifications.Configuration;
 using StackExchange.Redis;
@@ -22,6 +23,10 @@ builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafk
 var redisOptions = ConfigurationOptions.Parse(redisUrl);
 redisOptions.AbortOnConnectFail = false;
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisOptions));
+
+// Register services for horizontal scaling
+// Each service instance (container/pod) has one ConnectionManager
+// Multiple instances are deployed via Docker/K8s for true horizontal scaling
 builder.Services.AddSingleton<ConnectionManager>();
 builder.Services.AddHostedService<KafkaConsumerService>();
 builder.Services.AddScoped<WebSocketEndpoint>();
