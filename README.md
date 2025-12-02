@@ -23,7 +23,7 @@ A car fleet management system built with AWS services, featuring event-driven ar
 
 ## Architecture
 
-![Architecture Diagram](diagram-export-11-30-2025-7_34_53-PM.png)
+![Architecture Diagram](diagram-export-12-2-2025-4_16_49-PM.png)
 
 ### Data Flow
 
@@ -70,13 +70,24 @@ Serverless API for event ingestion with authentication.
 
 📖 **[Car Telemetry Service Documentation](backend/car-telemetry-service/README.md)**
 
+### 3. Realtime Notifications Service
+
+Horizontally scalable service for real-time notifications.
+
+- **Stack**: .NET 8, Kafka Consumer, Redis, WebSockets
+- **Function**: Consumes Kafka events, pushes notifications to frontend clients via WebSockets
+- **Features**: Real-time notifications, session management, event broadcasting
+
+📖 **[Realtime Notifications Service Documentation](backend/realtime-notifications/README.md)**
+
 ## Project Structure
 
 ```
 OrgCarFleet/
 ├── backend/
 │   ├── ingestion-service/          # Serverless event ingestion
-│   └── car-telemetry-service/      # Kafka consumer microservice
+│   ├── car-telemetry-service/      # Kafka consumer microservice
+│   └── realtime-notifications/     # Realtime notification service (WebSocket)
 ├── frontend/                       # React SPA
 │   ├── src/                        # React components
 │   └── package.json

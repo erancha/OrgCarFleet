@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Car Telemetry Service Deployment Script
-# This script builds and deploys the car telemetry service using Docker Compose
+# Realtime Notifications Service Deployment Script
+# This script builds and deploys the realtime notifications service using Docker Compose
 
 set -e
 
@@ -11,7 +11,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PROJECT_NAME="orgcarfleet"
 
 echo "=========================================="
-echo "Car Telemetry Service Deployment"
+echo "Realtime Notifications Service Deployment"
 echo "=========================================="
 
 # Colors for output
@@ -28,7 +28,7 @@ print_info() {
 print_warning() {
     echo -e "${YELLOW}[WARN]${NC} $1"
 }
-
+ 
 print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
@@ -55,10 +55,8 @@ case $COMMAND in
                 print_warning ".env file not found. Creating from .env.example..."
                 cp "$PROJECT_ROOT/.env.example" "$PROJECT_ROOT/.env"
                 print_warning "Please review and update .env file with your actual credentials!"
-            else
-                print_error ".env.example file not found. Please create .env file manually."
-                exit 1
             fi
+            # If no .env.example, we proceed (defaults might be in docker-compose)
         fi
         
         docker-compose -p "$PROJECT_NAME" -f "$DOCKER_COMPOSE_FILE" up -d
@@ -82,13 +80,13 @@ case $COMMAND in
     rebuild)
         print_info "Rebuilding and restarting services..."
         docker-compose -p "$PROJECT_NAME" down
-        docker-compose -p "$PROJECT_NAME" -f "$DOCKER_COMPOSE_FILE" build --no-cache 
-        docker-compose -p "$PROJECT_NAME" -f "$DOCKER_COMPOSE_FILE" up -d 
+        docker-compose -p "$PROJECT_NAME" -f "$DOCKER_COMPOSE_FILE" build --no-cache
+        docker-compose -p "$PROJECT_NAME" -f "$DOCKER_COMPOSE_FILE" up -d
         print_info "Services rebuilt and started successfully!"
         ;;
     
     logs)
-        SERVICE=${2:-car-telemetry-service}
+        SERVICE=${2:-realtime-notifications}
         print_info "Showing logs for $SERVICE..."
         docker-compose -p "$PROJECT_NAME" logs -f "$SERVICE"
         ;;

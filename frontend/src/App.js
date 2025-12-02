@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { config } from './config';
+import WebSocketNotifications from './WebSocketNotifications';
 import './App.css';
 
 // Manual OIDC helper functions
@@ -321,6 +322,8 @@ function App() {
               <pre>{JSON.stringify(response, null, 2)}</pre>
             </div>
           )}
+
+          <WebSocketNotifications userId={user.sub} />
         </div>
       </div>
     </div>
