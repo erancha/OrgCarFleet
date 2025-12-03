@@ -9,8 +9,7 @@ A .NET Core microservice that consumes telemetry data from Kafka topics and stor
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Development](#development)
-  - [Local Development](#local-development)
-  - [Build Docker Image](#build-docker-image)
+  * [Local Development](#local-development)
 - [Deployment](#deployment)
 
 <!-- tocstop -->

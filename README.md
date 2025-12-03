@@ -7,12 +7,12 @@ A car fleet management system built with AWS services, featuring event-driven ar
 <!-- toc -->
 
 - [Architecture](#architecture)
-  - [Data Flow](#data-flow)
   - [Key Components](#key-components)
   - [Architecture Principles](#architecture-principles)
 - [Services](#services)
   - [1. Ingestion Service](#1-ingestion-service)
   - [2. Car Telemetry Service](#2-car-telemetry-service)
+  - [3. Realtime Notifications Service](#3-realtime-notifications-service)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
   - [Prerequisites](#prerequisites)
@@ -23,7 +23,7 @@ A car fleet management system built with AWS services, featuring event-driven ar
 
 ## Architecture
 
-![Architecture Diagram](diagram-export-12-3-2025-2_27_59-AM.png)
+![Architecture Diagram](diagram-export-12-3-2025-8_49_51-AM.png)
 
 ### Key Components
 
@@ -50,7 +50,6 @@ Serverless API for event ingestion with authentication.
 
 - **Stack**: AWS Lambda, API Gateway, SQS, Cognito
 - **Function**: Validates requests, authenticates users, queues events to Kafka
-- **Topics**: `orgcarfleet-org-events`, `orgcarfleet-fleet-events`, `orgcarfleet-car-events`
 
 📖 **[Ingestion Service Documentation](backend/ingestion-service/README.md)**
 
@@ -60,7 +59,6 @@ Serverless API for event ingestion with authentication.
 
 - **Stack**: .NET 8, Kafka Consumer, PostGIS, Docker
 - **Function**: Consumes car events from Kafka, stores geospatial data in PostGIS
-- **Features**: Real-time location tracking, spatial queries, telemetry analytics
 
 📖 **[Car Telemetry Service Documentation](backend/car-telemetry-service/README.md)**
 
@@ -102,6 +100,7 @@ OrgCarFleet/
 - AWS CLI configured
 - Kafka cluster (AWS EC2)
 - PostgreSQL with PostGIS (AWS EC2)
+- Redis (AWS EC2)
 
 ### Deploy All Services
 
