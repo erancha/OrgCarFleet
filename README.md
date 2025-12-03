@@ -119,10 +119,10 @@ cd backend/ingestion-service/scripts
 ./build-deploy.sh dev
 ```
 
-**Car Telemetry Service:**
+**Car Telemetry Service**, **Realtime Notifications Service**:
 
 ```bash
-cd backend/car-telemetry-service/scripts
+cd backend/<folder>/scripts
 ./build-deploy.sh up
 ```
 
