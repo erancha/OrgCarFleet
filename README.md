@@ -25,13 +25,6 @@ A car fleet management system built with AWS services, featuring event-driven ar
 
 ![Architecture Diagram](diagram-export-12-2-2025-4_16_49-PM.png)
 
-### Data Flow
-
-```
-React Frontend → API Gateway + Cognito Auth → Ingestion Service (Lambda + SQS) →
-Kafka → Car Telemetry Service (Kafka Consumer) → PostGIS Database
-```
-
 ### Key Components
 
 1. **Frontend** - React SPA with Google OIDC via Cognito
@@ -40,6 +33,7 @@ Kafka → Car Telemetry Service (Kafka Consumer) → PostGIS Database
 4. **Kafka Cluster** - Event streaming backbone (self-managed on AWS EC2)
 5. **Car Telemetry Service** - .NET microservice consuming telemetry events
 6. **PostGIS Database** - PostgreSQL with geospatial extensions for location data
+7. **Realtime Notifications Service** - .NET microservice for WebSocket-based real-time notifications
 
 ### Architecture Principles
 

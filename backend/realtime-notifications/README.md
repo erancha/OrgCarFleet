@@ -11,11 +11,16 @@ This service is responsible for delivering real-time notifications to the fronte
 
 ## Configuration
 
-The service is configured via environment variables:
+The service is configured via `appsettings.json` and environment variables:
 
-- `PORT`: The port to run the WebSocket server on (default: 8080).
-- `KAFKA_BROKER_ENDPOINT`: The Kafka broker address.
-- `REDIS_URL`: The Redis connection string.
+- **Port**: Configured in `launchSettings.json` (`applicationUrl`) for local development, or via environment in Docker/K8s (default: 8080).
+- **Kafka**: Configured via the `Kafka` section in `appsettings.json` using the Options pattern:
+  - `Kafka__BootstrapServers`: Kafka broker address
+  - `Kafka__GroupId`: Consumer group ID
+  - `Kafka__Topics`: Array of topics to consume
+  - `Kafka__AutoOffsetReset`: Offset reset behavior
+  - `Kafka__EnableAutoCommit`: Auto-commit setting
+- **Redis**: Configured via `REDIS_URL` (connection string with host, port, and password)
 
 ## Scalability
 
