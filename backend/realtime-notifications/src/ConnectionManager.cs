@@ -13,7 +13,7 @@ public class ConnectionManager
     private readonly IConnectionMultiplexer _redis;
     private readonly IDatabase _redisDb;
     private const string RedisChannelPrefix = "ws-notifications:";
-    private const string UserInstanceMappingHash = "user-instance-mappings";
+    private const string UserInstanceMappingHash = "user-instance-mapping";
     
     private readonly string _instanceId;
     private readonly ILogger<ConnectionManager> _logger;
@@ -21,7 +21,7 @@ public class ConnectionManager
     // Maps each userId to their active WebSocket connections.
     // ConcurrentDictionary<WebSocket, byte> is used as a thread-safe set (no built-in ConcurrentHashSet in .NET).
     // The byte value is ignored; only the keys (WebSockets) matter.
-    private readonly ConcurrentDictionary<string, ConcurrentDictionary<WebSocket, byte>> _userSockets = new();
+    private readonly ConcurrentDictionary<string, ConcurrentDictionary<WebSocket, byte>> _localUserSocketsMapping = new();
 
     public ConnectionManager(IConnectionMultiplexer redis, ILogger<ConnectionManager> logger)
     {
@@ -45,7 +45,7 @@ public class ConnectionManager
 
     public async Task RegisterConnection(string userId, WebSocket socket)
     {
-        var userConnections = _userSockets.GetOrAdd(userId, _ => new ConcurrentDictionary<WebSocket, byte>());
+        var userConnections = _localUserSocketsMapping.GetOrAdd(userId, _ => new ConcurrentDictionary<WebSocket, byte>());
         userConnections.TryAdd(socket, 0);
         
         // Store mapping from userId to this instance ID in Redis hash (HSET)
@@ -57,12 +57,12 @@ public class ConnectionManager
 
     public async Task UnregisterConnection(string userId, WebSocket socket)
     {
-        if (_userSockets.TryGetValue(userId, out var userConnections))
+        if (_localUserSocketsMapping.TryGetValue(userId, out var userConnections))
         {
             userConnections.TryRemove(socket, out _);
             if (userConnections.IsEmpty)
             {
-                _userSockets.TryRemove(userId, out _);
+                _localUserSocketsMapping.TryRemove(userId, out _);
                 
                 // Remove mapping from Redis hash when no more connections for this user (HDEL)
                 await _redisDb.HashDeleteAsync(UserInstanceMappingHash, userId);
@@ -76,7 +76,7 @@ public class ConnectionManager
     public async Task SendToUser(string userId, object payload)
     {
         // Check if user is connected locally
-        if (_userSockets.TryGetValue(userId, out var userConnections) && !userConnections.IsEmpty)
+        if (_localUserSocketsMapping.TryGetValue(userId, out var userConnections) && !userConnections.IsEmpty)
         {
             _logger.LogInformation(
                 "User {UserId} found locally on instance {InstanceId}, sending directly to {ConnectionCount} connections",
@@ -145,7 +145,7 @@ public class ConnectionManager
 
             var payload = data.payload;
 
-            if (_userSockets.TryGetValue(userId, out var userConnections))
+            if (_localUserSocketsMapping.TryGetValue(userId, out var userConnections))
             {
                 await SendToLocalConnections(userId, payload, userConnections);
             }

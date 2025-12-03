@@ -6,21 +6,8 @@ This service is responsible for delivering real-time notifications to the fronte
 
 - **.NET 8**: Runtime environment (ASP.NET Core Web API).
 - **WebSocket**: Native ASP.NET Core WebSocket middleware for real-time connections.
-- **Kafka (Confluent.Kafka)**: Consumes events from the `orgcarfleet-notifications` topic.
-- **Redis (StackExchange.Redis)**: Used for horizontal scalability (Pub/Sub) to broadcast events across instances.
-
-## Configuration
-
-The service is configured via `appsettings.json` and environment variables:
-
-- **Port**: Configured in `launchSettings.json` (`applicationUrl`) for local development, or via environment in Docker/K8s (default: 8080).
-- **Kafka**: Configured via the `Kafka` section in `appsettings.json` using the Options pattern:
-  - `Kafka__BootstrapServers`: Kafka broker address
-  - `Kafka__GroupId`: Consumer group ID
-  - `Kafka__Topics`: Array of topics to consume
-  - `Kafka__AutoOffsetReset`: Offset reset behavior
-  - `Kafka__EnableAutoCommit`: Auto-commit setting
-- **Redis**: Configured via `REDIS_URL` (connection string with host, port, and password)
+- **Kafka**: Consumes events from the `orgcarfleet-notifications` topic.
+- **Redis**: Used for horizontal scalability (Pub/Sub) to broadcast events across instances.
 
 ## Scalability
 
