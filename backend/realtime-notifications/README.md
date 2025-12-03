@@ -26,7 +26,7 @@ The service is configured via `appsettings.json` and environment variables:
 
 This service is horizontally scalable. When a Kafka event arrives, the service first checks if the target user is connected locally. If yes, it delivers the message directly via WebSocket. If not, it uses Redis to look up which instance has the user and publishes the message to that specific instance's Redis channel.
 
-https://miro.com/app/live-embed/uXjVJhUeMrw=/?embedMode=view_only_without_ui&moveToViewport=-1823%2C-2410%2C4011%2C2654&embedId=333513776545
+![Diagram](https://miro.com/app/live-embed/uXjVJhUeMrw=/?embedMode=view_only_without_ui&moveToViewport=-1823%2C-2410%2C4011%2C2654&embedId=333513776545)
 
 ## Deployment
 
