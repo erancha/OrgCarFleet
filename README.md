@@ -23,7 +23,7 @@ A car fleet management system built with AWS services, featuring event-driven ar
 
 ## Architecture
 
-![Architecture Diagram](diagram-export-12-2-2025-4_16_49-PM.png)
+![Architecture Diagram](diagram-export-12-3-2025-2_27_59-AM.png)
 
 ### Key Components
 
