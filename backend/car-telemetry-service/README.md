@@ -9,8 +9,8 @@ A .NET Core microservice that consumes telemetry data from Kafka topics and stor
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Development](#development)
-  * [Local Development](#local-development)
-  * [Build Docker Image](#build-docker-image)
+  - [Local Development](#local-development)
+  - [Build Docker Image](#build-docker-image)
 - [Deployment](#deployment)
 
 <!-- tocstop -->
@@ -65,13 +65,6 @@ dotnet run
 ```
 
 Update `appsettings.Development.json` with your local Kafka and PostgreSQL settings.
-
-### Build Docker Image
-
-```bash
-cd src
-docker build -t car-telemetry-service .
-```
 
 ## Deployment
 

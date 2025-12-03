@@ -24,22 +24,22 @@ The service is configured via `appsettings.json` and environment variables:
 
 ## Scalability
 
-This service is horizontally scalable. It uses Redis Pub/Sub to broadcast Kafka events to all running instances. Each instance then checks its local WebSocket connections and delivers the message to the target user if connected.
+This service is horizontally scalable. When a Kafka event arrives, the service first checks if the target user is connected locally. If yes, it delivers the message directly via WebSocket. If not, it uses Redis to look up which instance has the user and publishes the message to that specific instance's Redis channel.
 
 ## Deployment
 
-### Docker Compose
-
-To run the service and its dependencies (Redis) locally:
+**Using deployment script:**
 
 ```bash
-docker-compose up --build
+./scripts/build-deploy.sh <command>
 ```
 
-### Usage
+Available commands:
 
-Connect to the WebSocket endpoint:
-
-```
-ws://host:8080/?userId=123
-```
+- `up` - Start all services
+- `down` - Stop all services
+- `restart` - Restart all services
+- `rebuild` - Rebuild and restart all services
+- `logs [service]` - Show logs
+- `status` - Show service status
+- `clean` - Remove all containers, volumes, and images
