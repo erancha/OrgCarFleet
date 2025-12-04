@@ -1,6 +1,6 @@
 # OrgCarFleet
 
-A car fleet management system built with AWS services, featuring event-driven architecture with Kafka and microservices for telemetry processing.
+A car fleet management starter built with AWS services, featuring event-driven architecture with Kafka and microservices for telemetry processing.
 
 ## Table of Contents
 
