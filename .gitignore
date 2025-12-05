@@ -37,3 +37,4 @@ samconfig.toml
 backend/car-telemetry-service/src/appsettings.Production.json
 backend/realtime-notifications/src/bin/
 backend/realtime-notifications/src/obj/
+scripts/aws-config.sh
