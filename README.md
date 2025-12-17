@@ -7,23 +7,23 @@ A car fleet management system (starter) built with AWS services, featuring event
 <!-- toc -->
 
 - [Architecture](#architecture)
-  * [Key Components](#key-components)
-  * [Architecture Principles](#architecture-principles)
+  - [Key Components](#key-components)
+  - [Architecture Principles](#architecture-principles)
 - [Services](#services)
-  * [1. Ingestion Service](#1-ingestion-service)
-  * [2. Car Telemetry Service](#2-car-telemetry-service)
-  * [3. Realtime Notifications Service](#3-realtime-notifications-service)
+  - [1. Ingestion Service](#1-ingestion-service)
+  - [2. Car Telemetry Service](#2-car-telemetry-service)
+  - [3. Realtime Notifications Service](#3-realtime-notifications-service)
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
-  * [Prerequisites](#prerequisites)
-  * [Deploy All Services](#deploy-all-services)
-  * [Deploy Individual Services](#deploy-individual-services)
+  - [Prerequisites](#prerequisites)
+  - [Deploy All Services](#deploy-all-services)
+  - [Deploy Individual Services](#deploy-individual-services)
 
 <!-- tocstop -->
 
 ## Architecture
 
-![Architecture Diagram](diagram-export-12-3-2025-8_49_51-AM.png)
+![Architecture Diagram](diagram-export-12-17-2025-7_44_48-PM.png)
 
 ### Key Components
 
