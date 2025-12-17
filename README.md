@@ -64,7 +64,7 @@ Serverless API for event ingestion with authentication.
 
 ### 3. Realtime Notifications Service
 
-Horizontally scalable service for real-time notifications.
+.NET microservice for real-time notifications.
 
 - **Stack**: .NET 8, Kafka Consumer, Redis, WebSockets
 - **Function**: Consumes Kafka events, pushes notifications to frontend clients via WebSockets
