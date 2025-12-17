@@ -1,0 +1,41 @@
+services:
+  # Nginx load balancer - distributes WebSocket connections across replicas
+  nginx:
+    image: nginx:alpine
+    container_name: realtime-notifications-lb
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - realtime-notifications-1
+      - realtime-notifications-2
+    restart: unless-stopped
+
+  # Common configuration for all realtime-notifications replicas
+  x-realtime-notifications-common: &realtime-notifications-common
+    build:
+      context: ../src
+      dockerfile: ../scripts/Dockerfile
+    image: realtime-notifications:latest
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      - DOTNET_ENVIRONMENT=Production
+      - REDIS_URL=${REDIS_URL?REDIS_URL is required (set it in scripts/.env)}
+      # Kafka Configuration Overrides
+      - Kafka__BootstrapServers=${KAFKA_BROKER_ENDPOINT?KAFKA_BROKER_ENDPOINT is required (set it in scripts/.env)}
+      - Kafka__GroupId=realtime-notifications-group
+      - Kafka__Topics__0=orgcarfleet-notifications
+      - Kafka__AutoOffsetReset=latest
+      - Kafka__EnableAutoCommit=true
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  realtime-notifications-1:
+    <<: *realtime-notifications-common
+    container_name: realtime-notifications-1
+
+  realtime-notifications-2:
+    <<: *realtime-notifications-common
+    container_name: realtime-notifications-2

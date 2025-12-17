@@ -1,0 +1,21 @@
+{
+    "name": "orgcarfleet-sqs-to-kafka",
+    "version": "1.0.0",
+    "description": "OrgCarFleet Lambda function for SQS to Kafka batch processing",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+        "kafkajs": "^2.2.4"
+    },
+    "keywords": [
+        "aws",
+        "lambda",
+        "sqs",
+        "kafka",
+        "batch-processing"
+    ],
+    "author": "",
+    "license": "ISC"
+}

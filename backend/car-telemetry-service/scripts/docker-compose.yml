@@ -1,0 +1,48 @@
+name: orgcarfleet
+
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: postgis
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-orgcarfleet_db}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-orgcarfleet_db} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  car-telemetry-service:
+    build:
+      context: ../src
+      dockerfile: ../scripts/Dockerfile
+    image: car-telemetry-service:latest
+    container_name: car-telemetry-service
+    environment:
+      - DOTNET_ENVIRONMENT=Production
+      # External Kafka broker (AWS EC2)
+      - Kafka__BootstrapServers=${KAFKA_BROKER_ENDPOINT?KAFKA_BROKER_ENDPOINT is required (set it in scripts/.env)}
+      - Kafka__GroupId=car-telemetry-consumer-group
+      - Kafka__Topics__0=orgcarfleet-car-events
+      - Kafka__AutoOffsetReset=latest
+      - Kafka__EnableAutoCommit=false
+      # Local PostgreSQL/PostGIS container
+      - Postgres__Host=postgis
+      - Postgres__Port=5432
+      - Postgres__Database=${POSTGRES_DB:-orgcarfleet_db}
+      - Postgres__Username=${POSTGRES_USER:-postgres}
+      - Postgres__Password=${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      postgis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgis_data:

@@ -1,0 +1,269 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: OrgCarFleet - API Gateway, Lambda, SQS with Google Authentication
+
+Parameters:
+  ApiGatewayCorsAllowedMethods:
+    Type: String
+    Default: "'GET,POST,OPTIONS'" # PUT,DELETE,
+    Description: 'Allowed HTTP methods for CORS'
+  ApiGatewayCorsAllowedHeaders:
+    Type: String
+    Default: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    Description: 'Allowed headers for CORS'
+  ApiGatewayCorsAllowedOrigins:
+    Type: String
+    Default: "'*'" # TODO
+    Description: 'Allowed origins for CORS'
+
+  ExistingUserPoolId:
+    Description: 'ID of an existing Cognito User Pool'
+    Type: String
+  ExistingCognitoDomain:
+    Description: 'Existing Cognito Domain'
+    Type: String
+  Environment:
+    Description: 'Environment name (dev, prod, etc.)'
+    Type: String
+    Default: 'dev'
+  KafkaBrokerEndpoint:
+    Description: 'Kafka broker endpoint (host:port)'
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs20.x
+    MemorySize: 256
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+
+Resources:
+  # API Gateway
+  ApiGatewayREST:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-REST'
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: !Ref ApiGatewayCorsAllowedMethods
+        AllowHeaders: !Ref ApiGatewayCorsAllowedHeaders
+        AllowOrigin: !Ref ApiGatewayCorsAllowedOrigins
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${ExistingUserPoolId}'
+            Identity:
+              Header: Authorization
+      # AccessLogSetting:
+      #   DestinationArn: !GetAtt ApiGatewayRESTLogGroup.Arn
+      #   Format: '{ "requestId":"$context.requestId", "ip":"$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod", "resourcePath":"$context.resourcePath", "status":"$context.status", "protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+
+  # ApiGatewayRESTLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: !Sub '/aws/apigateway/${AWS::StackName}-REST/access-logs/'
+  #     RetentionInDays: 1
+
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref ExistingUserPoolId
+      ClientName: !Sub '${AWS::StackName}-UserPoolClient'
+      GenerateSecret: false
+      AllowedOAuthFlows: ['code']
+      AllowedOAuthScopes: ['phone', 'email', 'openid', 'profile']
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - 'http://localhost:3000'
+        - 'http://localhost:3000/'
+      LogoutURLs:
+        - 'http://localhost:3000'
+        - 'http://localhost:3000/'
+      SupportedIdentityProviders: ['Google']
+      ExplicitAuthFlows:
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+
+  # API Ingestion Lambda - First stage of ingestion layer: Validates and authenticates REST API Gateway requests, pushes events to SQS
+  RESTIngestionLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'RESTIngestion-${AWS::StackName}'
+      CodeUri: ../rest-api
+      Handler: index.handler
+      Role: !GetAtt RESTIngestionLambdaRole.Arn
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayREST
+            Path: /api
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !Ref IngestionQueue
+
+  # Lambda Execution Role
+  RESTIngestionLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SQSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:GetQueueUrl
+                Resource: !GetAtt IngestionQueue.Arn
+
+  # SQS Queue - Durable message buffer for asynchronous processing
+  IngestionQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${AWS::StackName}-ingestion'
+      VisibilityTimeout: 60 # Time (seconds) a message is invisible after being received by a consumer
+      MessageRetentionPeriod: 345600 # Time (seconds) messages are retained in queue before deletion (4 days)
+      ReceiveMessageWaitTimeSeconds: 20 # Long polling duration (seconds) to wait for messages before returning empty response
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt IngestionDLQ.Arn
+        maxReceiveCount: 3 # Move to DLQ after 3 failed processing attempts
+
+  # Dead Letter Queue - Stores invalid messages that cannot be processed
+  IngestionDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${AWS::StackName}-ingestion-dlq'
+      MessageRetentionPeriod: 1209600 # 14 days retention for investigation
+      ReceiveMessageWaitTimeSeconds: 20
+
+  # Batch Producer Lambda - Second stage of ingestion layer: Reads from SQS in batches and produces to Kafka topics
+  SQSToKafkaLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'SQSToKafka-${AWS::StackName}'
+      CodeUri: ../sqs-to-kafka
+      Handler: index.handler
+      Role: !GetAtt SQSToKafkaLambdaRole.Arn
+      Timeout: 60
+      MemorySize: 512
+      Environment:
+        Variables:
+          KAFKA_BROKER_ENDPOINT: !Ref KafkaBrokerEndpoint
+          KAFKAJS_NO_PARTITIONER_WARNING: '1'
+
+  # Provisioned Concurrency for SQS to Kafka Lambda (COMMENTED OUT FOR COST SAVINGS - FFU: Provisioned concurrency would cost ~$0.015/GB-hour × 512MB × 2 instances = ~$15-20/month even when idle)
+  # SQSToKafkaLambdaVersion:
+  #   Type: AWS::Lambda::Version
+  #   Properties:
+  #     FunctionName: !Ref SQSToKafkaLambda
+  #     Description: 'Version with provisioned concurrency'
+
+  # SQSToKafkaLambdaAlias:
+  #   Type: AWS::Lambda::Alias
+  #   Properties:
+  #     FunctionName: !Ref SQSToKafkaLambda
+  #     FunctionVersion: !GetAtt SQSToKafkaLambdaVersion.Version
+  #     Name: 'live'
+  #     ProvisionedConcurrencyConfig:
+  #       ProvisionedConcurrentExecutions: 2
+
+  # Lambda Execution Role for SQS to Kafka
+  SQSToKafkaLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SQSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !GetAtt IngestionQueue.Arn
+
+  # Event Source Mapping - Connects SQS to Lambda
+  SQSToKafkaEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt IngestionQueue.Arn
+      FunctionName: !GetAtt SQSToKafkaLambda.Arn
+      BatchSize: 10 # Process up to 10 messages per invocation
+      MaximumBatchingWindowInSeconds: 5 # Wait up to 5 seconds to gather a batch
+      FunctionResponseTypes:
+        - ReportBatchItemFailures # Enable partial batch failure reporting
+
+Outputs:
+  ApiUrl:
+    Description: 'API Gateway endpoint URL'
+    Value: !Sub 'https://${ApiGatewayREST}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+
+  QueueUrl:
+    Description: 'SQS Queue URL'
+    Value: !Ref IngestionQueue
+    Export:
+      Name: !Sub '${AWS::StackName}-QueueUrl'
+
+  QueueArn:
+    Description: 'SQS Queue ARN'
+    Value: !GetAtt IngestionQueue.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-QueueArn'
+
+  UserPoolId:
+    Description: 'Cognito User Pool ID'
+    Value: !Ref ExistingUserPoolId
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolId'
+
+  CognitoDomain:
+    Description: 'Cognito Domain'
+    Value: !Ref ExistingCognitoDomain
+    Export:
+      Name: !Sub '${AWS::StackName}-CognitoDomain'
+
+  UserPoolClientId:
+    Description: 'Cognito User Pool Client ID'
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolClientId'
+
+  DLQUrl:
+    Description: 'Dead Letter Queue URL'
+    Value: !Ref IngestionDLQ
+    Export:
+      Name: !Sub '${AWS::StackName}-DLQUrl'
+
+  DLQArn:
+    Description: 'Dead Letter Queue ARN'
+    Value: !GetAtt IngestionDLQ.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-DLQArn'

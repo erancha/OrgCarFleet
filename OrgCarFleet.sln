@@ -1,0 +1,48 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "car-telemetry-service", "car-telemetry-service", "{525B018F-C18D-5906-6B31-D35D70AD0D80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F5C6AF7D-4B14-CF02-8910-CE31D684C877}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarTelemetryService", "backend\car-telemetry-service\src\CarTelemetryService.csproj", "{DC1E02FD-8CEA-0B1D-28E3-D2B694419025}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "realtime-notifications", "realtime-notifications", "{C071B968-AEDA-7E7A-4DD2-94001FC1B736}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1589E5F9-744C-CF30-CE10-2EE0FC29FD00}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "realtime-notifications", "backend\realtime-notifications\src\realtime-notifications.csproj", "{4EC13D05-094D-A8FC-0A59-89E417BA29B1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DC1E02FD-8CEA-0B1D-28E3-D2B694419025}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC1E02FD-8CEA-0B1D-28E3-D2B694419025}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC1E02FD-8CEA-0B1D-28E3-D2B694419025}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC1E02FD-8CEA-0B1D-28E3-D2B694419025}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4EC13D05-094D-A8FC-0A59-89E417BA29B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4EC13D05-094D-A8FC-0A59-89E417BA29B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4EC13D05-094D-A8FC-0A59-89E417BA29B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4EC13D05-094D-A8FC-0A59-89E417BA29B1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{525B018F-C18D-5906-6B31-D35D70AD0D80} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{F5C6AF7D-4B14-CF02-8910-CE31D684C877} = {525B018F-C18D-5906-6B31-D35D70AD0D80}
+		{DC1E02FD-8CEA-0B1D-28E3-D2B694419025} = {F5C6AF7D-4B14-CF02-8910-CE31D684C877}
+		{C071B968-AEDA-7E7A-4DD2-94001FC1B736} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{1589E5F9-744C-CF30-CE10-2EE0FC29FD00} = {C071B968-AEDA-7E7A-4DD2-94001FC1B736}
+		{4EC13D05-094D-A8FC-0A59-89E417BA29B1} = {1589E5F9-744C-CF30-CE10-2EE0FC29FD00}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FE6DB55C-D8B7-4D29-B2BC-433353B51776}
+	EndGlobalSection
+EndGlobal
